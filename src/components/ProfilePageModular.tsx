@@ -280,7 +280,6 @@ export function ProfilePageModular({ onNavigate }: ProfilePageModularProps) {
 
   const stats = [
     { label: "Events Attended", value: "12", icon: Calendar, color: "text-[#FF7A33]" },
-    { label: "Connections", value: "34", icon: Users, color: "text-[#1D6FD8]" },
     { label: "Badges Earned", value: "8", icon: Award, color: "text-purple-600" },
     { label: "Profile Score", value: "85%", icon: TrendingUp, color: "text-green-600" },
   ];
@@ -329,67 +328,102 @@ export function ProfilePageModular({ onNavigate }: ProfilePageModularProps) {
                   <Edit className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
                   Edit Profile
                 </Button>
+                <Button 
+                  className="bg-gradient-to-r from-[#FF7A33] to-[#FF9966] text-white hover:from-[#FF6A23] hover:to-[#FF8856] text-xs" 
+                  size="sm"
+                  onClick={() => onNavigate && onNavigate("my-connections")}
+                >
+                  <Users className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                  Connections
+                </Button>
               </div>
             </div>
 
             {/* Profile Completeness and Stats Row */}
-            <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-              {/* Profile Completeness - Reduced Width */}
-              <Card 
-                className="flex-1 p-3 md:p-4 bg-gradient-to-r from-[#FF7A33]/5 to-[#1D6FD8]/5 border-[#FF7A33]/20 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => onNavigate && onNavigate("profile-details")}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <Zap className="w-4 h-4 md:w-5 md:h-5 text-[#FF7A33]" />
-                    <span className="text-xs">Profile Completeness</span>
-                  </div>
-                  <span className="text-[#FF7A33] text-xs font-semibold">{profileCompletion}%</span>
-                </div>
-                <div className="mt-2 mb-2">
-                  <Progress 
-                    value={profileCompletion} 
-                    className="h-2 md:h-2.5 w-full"
+            <div className="flex flex-row gap-3 md:gap-4 items-center justify-between">
+              {/* Profile Completeness - Small Round Button with Colored Border - Left Side */}
+              <div className="relative w-16 h-16 md:w-20 md:h-20">
+                <Button
+                  onClick={() => onNavigate && onNavigate("profile-details")}
+                  className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white text-[#FF7A33] hover:bg-gray-50 p-0 flex flex-col items-center justify-center gap-1 shadow-lg hover:shadow-xl transition-all hover:scale-105 relative z-10 border-0"
+                  size="sm"
+                >
+                  <Zap className="w-5 h-5 md:w-6 md:h-6" />
+                  <span className="text-xs md:text-sm font-semibold">{profileCompletion}%</span>
+                </Button>
+                {/* Colored Border Circle based on percentage - Mobile */}
+                <svg 
+                  className="absolute inset-0 w-16 h-16 transform -rotate-90 pointer-events-none md:hidden"
+                  viewBox="0 0 64 64"
+                >
+                  <circle cx="32" cy="32" r="28" stroke="#E5E7EB" strokeWidth="4" fill="none" />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="url(#profile-gradient-mobile)"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray={`${(profileCompletion / 100) * 175.93} 175.93`}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
                   />
-                </div>
-                <p className="text-xs text-gray-600">
-                  {profileCompletion < 100 
-                    ? "Add your skills and networking goals to complete your profile"
-                    : "Your profile is complete! Keep it updated for better connections."
-                  }
-                </p>
-              </Card>
+                  <defs>
+                    <linearGradient id="profile-gradient-mobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FF7A33" />
+                      <stop offset="100%" stopColor="#1D6FD8" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {/* Colored Border Circle based on percentage - Desktop */}
+                <svg 
+                  className="hidden md:block absolute inset-0 w-20 h-20 transform -rotate-90 pointer-events-none"
+                  viewBox="0 0 80 80"
+                >
+                  <circle cx="40" cy="40" r="36" stroke="#E5E7EB" strokeWidth="4" fill="none" />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="36"
+                    stroke="url(#profile-gradient-desktop)"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray={`${(profileCompletion / 100) * 226.19} 226.19`}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                  <defs>
+                    <linearGradient id="profile-gradient-desktop" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FF7A33" />
+                      <stop offset="100%" stopColor="#1D6FD8" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
 
-              {/* Stats Cards - Horizontal Row */}
-              <div className="flex-1 flex flex-row gap-3 overflow-x-auto">
+              {/* Stats Round Buttons - Right Side */}
+              <div className="flex flex-row gap-3 md:gap-4">
                 {stats.map((stat, index) => {
                   const Icon = stat.icon;
-                  const bgColor = stat.color === "text-[#FF7A33]" ? "bg-[#FF7A33]/10" : 
-                                 stat.color === "text-[#1D6FD8]" ? "bg-[#1D6FD8]/10" :
-                                 stat.color === "text-purple-600" ? "bg-purple-100" :
-                                 "bg-green-100";
+                  const borderColor = stat.color === "text-[#FF7A33]" ? "#FF7A33" : 
+                                     stat.color === "text-[#1D6FD8]" ? "#1D6FD8" :
+                                     stat.color === "text-purple-600" ? "#9333EA" :
+                                     "#16A34A";
+                  const iconColor = stat.color === "text-[#FF7A33]" ? "text-[#FF7A33]" : 
+                                   stat.color === "text-[#1D6FD8]" ? "text-[#1D6FD8]" :
+                                   stat.color === "text-purple-600" ? "text-purple-600" :
+                                   "text-green-600";
                   return (
-                    <Card
-                      key={index}
-                      className="flex-1 min-w-[7rem] md:min-w-[25%] p-2 md:p-4 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
-                    >
-                      {/* Hover gradient effect */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#FF7A33]/5 to-[#1D6FD8]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      
-                      <div className="relative">
-                        <div className="flex items-start justify-between mb-2 md:mb-3">
-                          <div className={`w-8 h-8 md:w-10 md:h-10 ${bgColor} rounded-lg flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform`}>
-                            <Icon className="w-4 h-4 md:w-5 md:h-5" />
-                          </div>
-                        </div>
-                        <h4 className="text-[8px] mb-1 group-hover:text-[#FF7A33] transition-colors">
-                          {stat.label}
-                        </h4>
-                        <p className="text-[8px] text-gray-600 line-clamp-2">
-                          {stat.value}
-                        </p>
-                      </div>
-                    </Card>
+                    <div key={index} className="relative w-16 h-16 md:w-20 md:h-20">
+                      <Button
+                        className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-white ${iconColor} hover:bg-gray-50 p-0 flex flex-col items-center justify-center gap-1 shadow-lg hover:shadow-xl transition-all hover:scale-105 relative z-10 border-2`}
+                        style={{ borderColor }}
+                        size="sm"
+                      >
+                        <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                        <span className="text-xs md:text-sm font-semibold">{stat.value}</span>
+                      </Button>
+                    </div>
                   );
                 })}
               </div>

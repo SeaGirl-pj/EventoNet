@@ -1,4 +1,4 @@
-import { Home, Calendar, MessageCircle, User, Search, Bell, LogOut, Image, Settings } from "lucide-react";
+import { Home, Calendar, MessageCircle, User, Search, Bell, LogOut, Image, Settings, Sparkles } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -35,13 +35,26 @@ export function Navigation({ currentPage, onNavigate, onLogout }: NavigationProp
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-16 relative">
             {/* Logo */}
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("posts")}>
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF7A33] to-[#1D6FD8] rounded-lg flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <span className="text-base md:text-xl hidden sm:block">EventConnect</span>
+              <span className="text-base md:text-xl font-semibold">EventoNet</span>
+            </div>
+
+            {/* AI Event Helper Button - Center */}
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <Button
+                onClick={() => onNavigate("ai-event-finder")}
+                className="bg-gradient-to-r from-[#FF7A33] to-[#1D6FD8] text-white hover:from-[#FF6A23] hover:to-[#1D5FC8] text-xs md:text-sm flex items-center gap-1.5 md:gap-2 px-2 md:px-3 whitespace-nowrap"
+                size="sm"
+              >
+                <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <span className="hidden sm:inline">AI Event Helper</span>
+                <span className="sm:hidden">AI Helper</span>
+              </Button>
             </div>
 
             {/* Search Bar - Desktop */}

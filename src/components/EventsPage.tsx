@@ -5,6 +5,17 @@ import { Input } from "./ui/input";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Textarea } from "./ui/textarea";
+import { Checkbox } from "./ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
 import {
   Search,
   Sparkles,
@@ -15,6 +26,9 @@ import {
   Award,
   Filter,
   X,
+  Plus,
+  Image as ImageIcon,
+  AlertCircle,
 } from "lucide-react";
 import {
   Select,
@@ -23,6 +37,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "./ui/command";
 
 interface EventsPageProps {
   onViewEvent?: () => void;
@@ -35,6 +62,25 @@ export function EventsPage({ onViewEvent, onNavigate }: EventsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+
+  // Create Event Dialog states
+  const [showCreateEventDialog, setShowCreateEventDialog] = useState(false);
+  const [eventPhoto, setEventPhoto] = useState("");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [createEventCountry, setCreateEventCountry] = useState("");
+  const [createEventCity, setCreateEventCity] = useState("");
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [createEventValidationErrors, setCreateEventValidationErrors] = useState({
+    photo: "",
+    title: "",
+    description: "",
+    category: "",
+    country: "",
+    city: "",
+  });
 
   // Categories list
   const categories = [
@@ -70,6 +116,127 @@ export function EventsPage({ onViewEvent, onNavigate }: EventsPageProps) {
   const handleCountryChange = (country: string) => {
     setSelectedCountry(country);
     setSelectedCity(""); // Reset city when country changes
+  };
+
+  // Create Event handlers
+  const handleCreateEventCountryChange = (country: string) => {
+    setCreateEventCountry(country);
+    setCreateEventCity(""); // Reset city when country changes
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEventPhoto(reader.result as string);
+        setCreateEventValidationErrors((prev) => ({ ...prev, photo: "" }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+    setCreateEventValidationErrors((prev) => ({ ...prev, category: "" }));
+  };
+
+  const validateCreateEventForm = () => {
+    const errors = {
+      photo: "",
+      title: "",
+      description: "",
+      category: "",
+      country: "",
+      city: "",
+    };
+
+    if (!eventPhoto) {
+      errors.photo = "Photo is required";
+    }
+
+    if (!eventTitle.trim()) {
+      errors.title = "Title is required";
+    }
+
+    if (!eventDescription.trim()) {
+      errors.description = "Description is required";
+    }
+
+    if (selectedCategories.length === 0) {
+      errors.category = "At least one category is required";
+    }
+
+    if (!createEventCountry) {
+      errors.country = "Country is required";
+    } else {
+      // Only validate city if country is selected
+      if (!createEventCity) {
+        errors.city = "City is required";
+      }
+    }
+
+    setCreateEventValidationErrors(errors);
+    return !errors.photo && !errors.title && !errors.description && !errors.category && !errors.country && !errors.city;
+  };
+
+  const handleCreateEvent = () => {
+    if (!validateCreateEventForm()) return;
+
+    // Handle create event logic here
+    console.log("Creating event:", {
+      photo: eventPhoto,
+      title: eventTitle,
+      description: eventDescription,
+      categories: selectedCategories,
+      country: createEventCountry,
+      city: createEventCity,
+    });
+
+    // Reset form and close dialog
+    setShowCreateEventDialog(false);
+    setEventPhoto("");
+    setEventTitle("");
+    setEventDescription("");
+    setSelectedCategories([]);
+    setCreateEventCountry("");
+    setCreateEventCity("");
+    setCategorySearchTerm("");
+    setCreateEventValidationErrors({
+      photo: "",
+      title: "",
+      description: "",
+      category: "",
+      country: "",
+      city: "",
+    });
+  };
+
+  const handleCreateEventDialogClose = (open: boolean) => {
+    setShowCreateEventDialog(open);
+    if (!open) {
+      // Reset form when closing
+      setEventPhoto("");
+      setEventTitle("");
+      setEventDescription("");
+      setSelectedCategories([]);
+      setCreateEventCountry("");
+      setCreateEventCity("");
+      setCategoryPopoverOpen(false);
+      setCategorySearchTerm("");
+      setCreateEventValidationErrors({
+        photo: "",
+        title: "",
+        description: "",
+        category: "",
+        country: "",
+        city: "",
+      });
+    }
   };
 
   const handleClearFilters = () => {
@@ -455,6 +622,317 @@ export function EventsPage({ onViewEvent, onNavigate }: EventsPageProps) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Floating Action Button - Create Event */}
+      <Dialog open={showCreateEventDialog} onOpenChange={handleCreateEventDialogClose}>
+        <DialogTrigger asChild>
+          <button className="floating-create-post-btn">
+            <Plus className="w-6 h-6" />
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Event</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new event
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Photo Upload */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Photo <span className="text-red-500">*</span>
+              </label>
+              <div className={`border-2 border-dashed rounded-lg p-4 md:p-8 text-center transition-colors cursor-pointer ${
+                createEventValidationErrors.photo 
+                  ? "border-red-300 bg-red-50" 
+                  : eventPhoto 
+                    ? "border-gray-300" 
+                    : "border-gray-300 hover:border-[#FF7A33]"
+              }`}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="event-image-upload"
+                />
+                <label htmlFor="event-image-upload" className="cursor-pointer">
+                  {eventPhoto ? (
+                    <div className="relative">
+                      <ImageWithFallback
+                        src={eventPhoto}
+                        alt="Preview"
+                        className="w-full h-32 md:h-48 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEventPhoto("");
+                          setCreateEventValidationErrors((prev) => ({ ...prev, photo: "" }));
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600 text-xs md:text-sm">
+                        Click to upload an image
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        PNG, JPG up to 10MB
+                      </p>
+                    </>
+                  )}
+                </label>
+              </div>
+              {createEventValidationErrors.photo && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {createEventValidationErrors.photo}
+                </p>
+              )}
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="Enter event title"
+                value={eventTitle}
+                onChange={(e) => {
+                  setEventTitle(e.target.value);
+                  if (e.target.value.trim()) {
+                    setCreateEventValidationErrors((prev) => ({ ...prev, title: "" }));
+                  }
+                }}
+                className={createEventValidationErrors.title ? "border-red-300" : ""}
+              />
+              {createEventValidationErrors.title && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {createEventValidationErrors.title}
+                </p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Description / About <span className="text-red-500">*</span>
+              </label>
+              <Textarea
+                className={`min-h-[100px] ${
+                  createEventValidationErrors.description ? "border-red-300" : ""
+                }`}
+                placeholder="Enter event description"
+                value={eventDescription}
+                onChange={(e) => {
+                  setEventDescription(e.target.value);
+                  if (e.target.value.trim()) {
+                    setCreateEventValidationErrors((prev) => ({ ...prev, description: "" }));
+                  }
+                }}
+              />
+              {createEventValidationErrors.description && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {createEventValidationErrors.description}
+                </p>
+              )}
+            </div>
+
+            {/* Categories - Dropdown Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Category <span className="text-red-500">*</span>
+                <span className="text-gray-500 text-xs font-normal ml-1">(Select one or more)</span>
+              </label>
+              <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={`w-full justify-between text-left font-normal ${
+                      createEventValidationErrors.category ? "border-red-300" : ""
+                    } ${selectedCategories.length === 0 ? "text-muted-foreground" : ""}`}
+                  >
+                    {selectedCategories.length === 0
+                      ? "Select categories..."
+                      : selectedCategories.length === 1
+                        ? selectedCategories[0]
+                        : `${selectedCategories.length} categories selected`}
+                    <Filter className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search categories..."
+                      className="mb-2"
+                      value={categorySearchTerm}
+                      onChange={(e) => setCategorySearchTerm(e.target.value)}
+                    />
+                    <div className="max-h-64 overflow-y-auto">
+                      {(() => {
+                        const filteredCategories = categories.filter((category) =>
+                          category.toLowerCase().includes(categorySearchTerm.toLowerCase())
+                        );
+                        return filteredCategories.length === 0 ? (
+                          <p className="text-sm text-gray-500 p-2">No category found.</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {filteredCategories.map((category) => {
+                              const isSelected = selectedCategories.includes(category);
+                              return (
+                                <div
+                                  key={category}
+                                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => handleCategoryToggle(category)}
+                                >
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => handleCategoryToggle(category)}
+                                  />
+                                  <label className="flex-1 cursor-pointer text-sm">
+                                    {category}
+                                  </label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Selected Categories Display */}
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedCategories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="outline"
+                      className="bg-[#FF7A33]/10 text-[#FF7A33] border-[#FF7A33] hover:bg-[#FF7A33]/20 flex items-center gap-1.5 px-2 py-1"
+                    >
+                      <span>{category}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCategoryToggle(category);
+                          setCreateEventValidationErrors((prev) => ({ ...prev, category: "" }));
+                        }}
+                        className="ml-1 hover:bg-[#FF7A33]/20 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {createEventValidationErrors.category && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {createEventValidationErrors.category}
+                </p>
+              )}
+            </div>
+
+            {/* Country */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={createEventCountry}
+                onValueChange={(value) => {
+                  handleCreateEventCountryChange(value);
+                  if (value) {
+                    setCreateEventValidationErrors((prev) => ({ ...prev, country: "" }));
+                  }
+                }}
+              >
+                <SelectTrigger className={createEventValidationErrors.country ? "border-red-300" : ""}>
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(countriesWithCities).map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {createEventValidationErrors.country && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {createEventValidationErrors.country}
+                </p>
+              )}
+            </div>
+
+            {/* City - Only show when country is selected */}
+            {createEventCountry && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={createEventCity}
+                  onValueChange={(value) => {
+                    setCreateEventCity(value);
+                    if (value) {
+                      setCreateEventValidationErrors((prev) => ({ ...prev, city: "" }));
+                    }
+                  }}
+                >
+                  <SelectTrigger className={createEventValidationErrors.city ? "border-red-300" : ""}>
+                    <SelectValue placeholder="Select a city" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countriesWithCities[createEventCountry]?.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {createEventValidationErrors.city && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {createEventValidationErrors.city}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => handleCreateEventDialogClose(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-[#FF7A33] to-[#1D6FD8] text-white"
+                onClick={handleCreateEvent}
+              >
+                Create Event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -44,10 +45,10 @@ import {
   MessageCircle,
   Share2,
   Clock,
-  Hash,
   X,
   AlertCircle,
   Filter,
+  Bookmark,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -82,14 +83,17 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
   const [imagePreview, setImagePreview] = useState("");
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
-  
-  // New state for hashtags and option selection
-  const [hashtags, setHashtags] = useState(["", "", ""]);
-  const [useHashtags, setUseHashtags] = useState(false);
+
+  // New state for event selection / creation
+  const [useCreateEvent, setUseCreateEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventDate, setNewEventDate] = useState("");
+  const [newEventTime, setNewEventTime] = useState("");
+  const [newEventLocation, setNewEventLocation] = useState("");
   const [validationErrors, setValidationErrors] = useState({
     photo: "",
     caption: "",
-    eventOrHashtags: "",
+    event: "",
   });
   const [eventPopoverOpen, setEventPopoverOpen] = useState(false);
 
@@ -210,6 +214,9 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
     { id: "4", name: "Startup Pitch Night" },
   ];
 
+  // Saved posts state
+  const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
+
   // Mock posts data
   const [posts, setPosts] = useState<Post[]>([
     {
@@ -290,28 +297,11 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
     }
   };
 
-  const handleHashtagChange = (index: number, value: string) => {
-    // Remove # if user types it, we'll add it automatically
-    const cleanValue = value.replace(/^#+/, "");
-    const newHashtags = [...hashtags];
-    newHashtags[index] = cleanValue;
-    setHashtags(newHashtags);
-    if (cleanValue) {
-      setValidationErrors((prev) => ({ ...prev, eventOrHashtags: "" }));
-    }
-  };
-
-  const formatHashtag = (value: string) => {
-    if (!value) return "";
-    const clean = value.replace(/^#+/, "").trim();
-    return clean ? `#${clean}` : "";
-  };
-
   const validateForm = () => {
     const errors = {
       photo: "",
       caption: "",
-      eventOrHashtags: "",
+      event: "",
     };
 
     if (!imagePreview) {
@@ -322,19 +312,18 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
       errors.caption = "Caption is required";
     }
 
-    if (useHashtags) {
-      const filledHashtags = hashtags.filter((h) => h.trim() !== "");
-      if (filledHashtags.length !== 3) {
-        errors.eventOrHashtags = "All three hashtags are required";
+    if (useCreateEvent) {
+      if (!newEventTitle.trim() || !newEventDate) {
+        errors.event = "Please enter a title and date for the new event";
       }
     } else {
       if (!selectedEvent) {
-        errors.eventOrHashtags = "Please select an event or enter three hashtags";
+        errors.event = "Please select an event or create a new one";
       }
     }
 
     setValidationErrors(errors);
-    return !errors.photo && !errors.caption && !errors.eventOrHashtags;
+    return !errors.photo && !errors.caption && !errors.event;
   };
 
   const handleCreatePost = () => {
@@ -343,10 +332,9 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
     let eventName = "";
     let eventId = "";
 
-    if (useHashtags) {
-      // Use hashtags - create a generic event name or use hashtags
-      eventName = hashtags.filter((h) => h.trim()).join(", ");
-      eventId = "hashtags";
+    if (useCreateEvent) {
+      eventName = newEventTitle.trim();
+      eventId = `created-${Date.now()}`;
     } else {
       const selectedEventData = recentEvents.find((e) => e.id === selectedEvent);
       if (!selectedEventData) return;
@@ -374,9 +362,12 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
     setNewPostCaption("");
     setSelectedEvent("");
     setImagePreview("");
-    setHashtags(["", "", ""]);
-    setUseHashtags(false);
-    setValidationErrors({ photo: "", caption: "", eventOrHashtags: "" });
+    setUseCreateEvent(false);
+    setNewEventTitle("");
+    setNewEventDate("");
+    setNewEventTime("");
+    setNewEventLocation("");
+    setValidationErrors({ photo: "", caption: "", event: "" });
   };
 
   const handleDialogClose = (open: boolean) => {
@@ -386,15 +377,28 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
       setNewPostCaption("");
       setSelectedEvent("");
       setImagePreview("");
-      setHashtags(["", "", ""]);
-      setUseHashtags(false);
-      setValidationErrors({ photo: "", caption: "", eventOrHashtags: "" });
+      setUseCreateEvent(false);
+      setNewEventTitle("");
+      setNewEventDate("");
+      setNewEventTime("");
+      setNewEventLocation("");
+      setValidationErrors({ photo: "", caption: "", event: "" });
       setEventPopoverOpen(false);
     }
   };
 
   const handleDeletePost = (postId: string) => {
     setPosts(posts.filter((post) => post.id !== postId));
+    // Remove from saved if it was saved
+    setSavedPostIds(savedPostIds.filter((id) => id !== postId));
+  };
+
+  const handleToggleSavePost = (postId: string) => {
+    setSavedPostIds((prev) =>
+      prev.includes(postId)
+        ? prev.filter((id) => id !== postId)
+        : [...prev, postId]
+    );
   };
 
   const handleEditPost = (postId: string) => {
@@ -605,27 +609,26 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                   )}
                 </div>
 
-                {/* Required: Event OR Hashtags */}
+                {/* Required: Event (Select existing or create new) */}
                 <div>
                   <label className="text-xs md:text-sm mb-2 block">
-                    Additional Information <span className="text-red-500">*</span>
+                    Event <span className="text-red-500">*</span>
                     <span className="text-gray-500 text-xs font-normal ml-1">
-                      (Complete one option)
+                      (Select an event you attended or create a new one)
                     </span>
                   </label>
                   
-                  {/* Option Toggle */}
+                  {/* Option Toggle: Select Event vs Create Event */}
                   <div className="flex gap-4 mb-3">
                     <button
                       type="button"
                       onClick={() => {
-                        setUseHashtags(false);
-                        setHashtags(["", "", ""]);
-                        setValidationErrors((prev) => ({ ...prev, eventOrHashtags: "" }));
+                        setUseCreateEvent(false);
+                        setValidationErrors((prev) => ({ ...prev, event: "" }));
                         setEventPopoverOpen(false);
                       }}
                       className={`flex-1 px-4 py-2 rounded-lg border-2 text-xs md:text-sm font-medium transition-colors ${
-                        !useHashtags
+                        !useCreateEvent
                           ? "border-[#FF7A33] bg-[#FF7A33]/10 text-[#FF7A33]"
                           : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
                       }`}
@@ -636,23 +639,23 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        setUseHashtags(true);
+                        setUseCreateEvent(true);
                         setSelectedEvent("");
-                        setValidationErrors((prev) => ({ ...prev, eventOrHashtags: "" }));
+                        setValidationErrors((prev) => ({ ...prev, event: "" }));
                       }}
                       className={`flex-1 px-4 py-2 rounded-lg border-2 text-xs md:text-sm font-medium transition-colors ${
-                        useHashtags
+                        useCreateEvent
                           ? "border-[#FF7A33] bg-[#FF7A33]/10 text-[#FF7A33]"
                           : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
                       }`}
                     >
-                      <Hash className="w-4 h-4 inline mr-2" />
-                      Enter Hashtags
+                      <Plus className="w-4 h-4 inline mr-2" />
+                      Create Event
                     </button>
                   </div>
 
                   {/* Option A: Event Selection with Search */}
-                  {!useHashtags && (
+                  {!useCreateEvent && (
                     <div>
                       <Popover open={eventPopoverOpen} onOpenChange={setEventPopoverOpen}>
                         <PopoverTrigger asChild>
@@ -660,7 +663,7 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                             variant="outline"
                             role="combobox"
                             className={`w-full justify-between text-left font-normal ${
-                              validationErrors.eventOrHashtags ? "border-red-300" : ""
+                              validationErrors.event ? "border-red-300" : ""
                             } ${!selectedEvent ? "text-muted-foreground" : ""}`}
                           >
                             {selectedEvent
@@ -681,7 +684,7 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                                     value={event.name}
                                     onSelect={() => {
                                       setSelectedEvent(event.id);
-                                      setValidationErrors((prev) => ({ ...prev, eventOrHashtags: "" }));
+                                      setValidationErrors((prev) => ({ ...prev, event: "" }));
                                       setEventPopoverOpen(false);
                                     }}
                                     className="cursor-pointer"
@@ -695,49 +698,72 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                           </Command>
                         </PopoverContent>
                       </Popover>
-                      {validationErrors.eventOrHashtags && (
+                      {validationErrors.event && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {validationErrors.eventOrHashtags}
+                          {validationErrors.event}
                         </p>
                       )}
                     </div>
                   )}
 
-                  {/* Option B: Hashtags */}
-                  {useHashtags && (
-                    <div>
-                      <div className="space-y-2">
-                        {hashtags.map((hashtag, index) => (
-                          <div key={index}>
-                            <Input
-                              placeholder={`Hashtag ${index + 1}`}
-                              value={hashtag}
-                              onChange={(e) => handleHashtagChange(index, e.target.value)}
-                              className={`text-xs md:text-sm ${
-                                validationErrors.eventOrHashtags ? "border-red-300" : ""
-                              }`}
-                              onBlur={(e) => {
-                                const formatted = formatHashtag(e.target.value);
-                                if (formatted) {
-                                  const newHashtags = [...hashtags];
-                                  newHashtags[index] = formatted.replace(/^#/, "");
-                                  setHashtags(newHashtags);
-                                }
-                              }}
-                            />
-                          </div>
-                        ))}
+                  {/* Option B: Create New Event */}
+                  {useCreateEvent && (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs md:text-sm font-medium">Event Title</label>
+                        <Input
+                          placeholder="Enter event title"
+                          value={newEventTitle}
+                          onChange={(e) => {
+                            setNewEventTitle(e.target.value);
+                            if (e.target.value.trim()) {
+                              setValidationErrors((prev) => ({ ...prev, event: "" }));
+                            }
+                          }}
+                          className="text-xs md:text-sm"
+                        />
                       </div>
-                      {validationErrors.eventOrHashtags && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs md:text-sm font-medium">Date</label>
+                          <Input
+                            type="date"
+                            value={newEventDate}
+                            onChange={(e) => {
+                              setNewEventDate(e.target.value);
+                              if (e.target.value) {
+                                setValidationErrors((prev) => ({ ...prev, event: "" }));
+                              }
+                            }}
+                            className="text-xs md:text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs md:text-sm font-medium">Time</label>
+                          <Input
+                            type="time"
+                            value={newEventTime}
+                            onChange={(e) => setNewEventTime(e.target.value)}
+                            className="text-xs md:text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs md:text-sm font-medium">Location (optional)</label>
+                        <Input
+                          placeholder="Enter event location or online platform"
+                          value={newEventLocation}
+                          onChange={(e) => setNewEventLocation(e.target.value)}
+                          className="text-xs md:text-sm"
+                        />
+                      </div>
+                      {validationErrors.event && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {validationErrors.eventOrHashtags}
+                          {validationErrors.event}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Enter three hashtags related to your post (e.g., technology, networking, innovation)
-                      </p>
                     </div>
                   )}
                 </div>
@@ -800,9 +826,15 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
           </div>
         )}
 
-        {/* Posts Feed */}
-        <div className="space-y-3 md:space-y-6">
-          {posts.map((post) => (
+        {/* Posts Feed with Tabs */}
+        <Tabs defaultValue="all" className="space-y-3 md:space-y-6">
+          <TabsList className="events-tabs-list flex flex-row flex-nowrap w-full max-w-lg">
+            <TabsTrigger value="all" className="events-tabs-trigger">All post</TabsTrigger>
+            <TabsTrigger value="saved" className="events-tabs-trigger">Saved</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="space-y-3 md:space-y-6">
+            {posts.map((post) => (
             <Card key={post.id} className="overflow-hidden">
               {/* Post Header */}
               <div className="p-3 md:p-4 flex items-center justify-between">
@@ -867,6 +899,20 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                     <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
                     {post.comments}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 md:gap-2 text-xs md:text-sm"
+                    onClick={() => handleToggleSavePost(post.id)}
+                  >
+                    <Bookmark
+                      className={`w-4 h-4 md:w-5 md:h-5 ${
+                        savedPostIds.includes(post.id)
+                          ? "fill-[#FF7A33] text-[#FF7A33]"
+                          : "text-gray-600"
+                      }`}
+                    />
+                  </Button>
                   <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 ml-auto text-xs md:text-sm">
                     <Share2 className="w-4 h-4 md:w-5 md:h-5" />
                   </Button>
@@ -886,8 +932,125 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                 </Badge>
               </div>
             </Card>
-          ))}
-        </div>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="saved" className="space-y-3 md:space-y-6">
+            {posts.filter((post) => savedPostIds.includes(post.id)).length > 0 ? (
+              posts
+                .filter((post) => savedPostIds.includes(post.id))
+                .map((post) => (
+                  <Card key={post.id} className="overflow-hidden">
+                    {/* Post Header */}
+                    <div className="p-3 md:p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <Avatar className="w-8 h-8 md:w-10 md:h-10">
+                          <AvatarFallback className="bg-gradient-to-br from-[#FF7A33] to-[#1D6FD8] text-white text-xs">
+                            {post.userInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-xs md:text-sm">{post.userName}</p>
+                          <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-600">
+                            <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span>{post.eventName}</span>
+                            <span>•</span>
+                            <span>{post.timestamp}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {post.isOwnPost && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditPost(post.id)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Post
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeletePost(post.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Post
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+
+                    {/* Post Image */}
+                    <div className="w-full h-[250px] md:h-[400px] bg-gray-100">
+                      <ImageWithFallback
+                        src={post.image}
+                        alt={post.eventName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Post Content */}
+                    <div className="p-3 md:p-4">
+                      {/* Actions */}
+                      <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+                        <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 text-xs md:text-sm">
+                          <Heart className="w-4 h-4 md:w-5 md:h-5" />
+                          {post.likes}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 text-xs md:text-sm">
+                          <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
+                          {post.comments}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 md:gap-2 text-xs md:text-sm"
+                          onClick={() => handleToggleSavePost(post.id)}
+                        >
+                          <Bookmark
+                            className={`w-4 h-4 md:w-5 md:h-5 ${
+                              savedPostIds.includes(post.id)
+                                ? "fill-[#FF7A33] text-[#FF7A33]"
+                                : "text-gray-600"
+                            }`}
+                          />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 ml-auto text-xs md:text-sm">
+                          <Share2 className="w-4 h-4 md:w-5 md:h-5" />
+                        </Button>
+                      </div>
+
+                      {/* Caption */}
+                      <p className="text-gray-800 text-xs md:text-sm">{post.caption}</p>
+
+                      {/* Event Tag */}
+                      <Badge
+                        variant="outline"
+                        className="mt-2 md:mt-3 cursor-pointer hover:bg-gray-100 text-xs"
+                        onClick={() => onNavigate && onNavigate("event-detail", post.eventId)}
+                      >
+                        <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
+                        {post.eventName}
+                      </Badge>
+                    </div>
+                  </Card>
+                ))
+            ) : (
+              <Card className="p-6 md:p-12 text-center">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                  <Heart className="w-6 h-6 md:w-8 md:h-8 text-gray-400" />
+                </div>
+                <h3 className="mb-2 text-sm md:text-base">No Saved Posts</h3>
+                <p className="text-gray-600 mb-3 md:mb-4 text-xs md:text-sm">
+                  Start saving posts you're interested in
+                </p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

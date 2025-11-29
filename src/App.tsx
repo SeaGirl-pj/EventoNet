@@ -21,6 +21,7 @@ import { ProfileDetailsPage } from "./components/ProfileDetailsPage";
 import { AIInsightsPage } from "./components/AIInsightsPage";
 import { AIEventFinderResultsPage } from "./components/AIEventFinderResultsPage";
 import { ServicesPage } from "./components/ServicesPage";
+import { MyConnectionsPage } from "./components/MyConnectionsPage";
 
 type AppState = "login" | "signup" | "app";
 type AppPage = 
@@ -41,7 +42,8 @@ type AppPage =
   | "event-insights"
   | "profile-details"
   | "ai-insights"
-  | "ai-event-finder";
+  | "ai-event-finder"
+  | "my-connections";
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>("login");
@@ -138,6 +140,12 @@ export default function App() {
       {currentPage === "ai-event-finder" && (
         <AIEventFinderResultsPage
           onBack={() => setCurrentPage("events")}
+          onNavigate={handleNavigate}
+        />
+      )}
+      {currentPage === "my-connections" && (
+        <MyConnectionsPage
+          onBack={() => setCurrentPage("profile")}
           onNavigate={handleNavigate}
         />
       )}
