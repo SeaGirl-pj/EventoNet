@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 
 export function ChatPage() {
-  const [selectedChat, setSelectedChat] = useState<string | null>("1");
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [showChatList, setShowChatList] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   const conversations = [
     {
@@ -154,6 +155,14 @@ export function ChatPage() {
 
   const currentConversation = conversations.find((c) => c.id === selectedChat);
 
+  // Filter conversations based on active tab
+  const filteredConversations = conversations.filter((conversation) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "direct") return conversation.type === "direct";
+    if (activeTab === "clubs") return conversation.type === "group";
+    return true;
+  });
+
   // Handle chat selection
   const handleChatSelect = (chatId: string) => {
     setSelectedChat(chatId);
@@ -186,11 +195,11 @@ export function ChatPage() {
         >
           <Card className="h-full flex flex-col rounded-none border-0 shadow-none min-h-0">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
-              <Tabs defaultValue="all" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 h-10 mb-4">
                   <TabsTrigger value="all" className="text-sm">All</TabsTrigger>
                   <TabsTrigger value="direct" className="text-sm">Direct</TabsTrigger>
-                  <TabsTrigger value="groups" className="text-sm">Groups</TabsTrigger>
+                  <TabsTrigger value="clubs" className="text-sm">Clubs</TabsTrigger>
                 </TabsList>
               </Tabs>
               <div className="relative">
@@ -205,7 +214,8 @@ export function ChatPage() {
 
             <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
               <div className="p-2">
-                {conversations.map((conversation) => (
+                {filteredConversations.length > 0 ? (
+                  filteredConversations.map((conversation) => (
                   <div
                     key={conversation.id}
                     onClick={() => handleChatSelect(conversation.id)}
@@ -260,7 +270,19 @@ export function ChatPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Users className="w-12 h-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500 text-sm">
+                      {activeTab === "direct" 
+                        ? "No direct messages yet" 
+                        : activeTab === "clubs"
+                        ? "No clubs available"
+                        : "No conversations"}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -301,7 +323,7 @@ export function ChatPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 pb-[180px] md:pb-0">
+                  <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 pb-4 md:pb-0">
                     <div className="p-6 space-y-4">
                       {systemMessages.map((msg) => {
                         const Icon = msg.icon;
@@ -367,7 +389,7 @@ export function ChatPage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 pb-[180px] md:pb-0">
+                  <div className="flex-1 overflow-y-auto scroll-smooth min-h-0 pb-4 md:pb-0">
                     <div className="p-6 space-y-4">
                       {messages.map((msg) => (
                         <div
@@ -406,7 +428,7 @@ export function ChatPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-white md:relative fixed bottom-[80px] left-0 right-0 md:bottom-auto md:left-auto md:right-auto z-40 md:z-auto shadow-lg md:shadow-none">
+                  <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-white md:relative fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto z-40 md:z-auto shadow-lg md:shadow-none" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0">
                         <Paperclip className="w-5 h-5" />

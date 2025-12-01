@@ -49,6 +49,7 @@ import {
   AlertCircle,
   Filter,
   Bookmark,
+  Users,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -216,6 +217,9 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
 
   // Saved posts state
   const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
+  
+  // Calendar events state
+  const [calendarEventIds, setCalendarEventIds] = useState<string[]>([]);
 
   // Mock posts data
   const [posts, setPosts] = useState<Post[]>([
@@ -399,6 +403,38 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
         ? prev.filter((id) => id !== postId)
         : [...prev, postId]
     );
+  };
+
+  const handleJoinNetworking = (eventId: string, eventName: string) => {
+    // Navigate to chat page - in a real app, this would filter to show the event's networking group
+    if (onNavigate) {
+      onNavigate("chat");
+      // You could also pass eventId as a parameter to filter the group
+      // For now, we'll just navigate to chat page
+    }
+  };
+
+  const handleAddToCalendar = (eventId: string, eventName: string) => {
+    // Add event to calendar
+    setCalendarEventIds((prev) => {
+      if (prev.includes(eventId)) {
+        // Remove from calendar if already added
+        return prev.filter((id) => id !== eventId);
+      } else {
+        // Add to calendar
+        return [...prev, eventId];
+      }
+    });
+    
+    // In a real app, this would integrate with calendar APIs (Google Calendar, iCal, etc.)
+    // For now, we'll just show a success message
+    const isAdded = calendarEventIds.includes(eventId);
+    if (!isAdded) {
+      // You could use toast notification here
+      console.log(`Event "${eventName}" added to calendar`);
+    } else {
+      console.log(`Event "${eventName}" removed from calendar`);
+    }
   };
 
   const handleEditPost = (postId: string) => {
@@ -854,7 +890,7 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                     </div>
                   </div>
                 </div>
-                {post.isOwnPost && (
+                {post.isOwnPost && post.id !== "1" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -913,6 +949,16 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                       }`}
                     />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 md:gap-2 text-xs md:text-sm"
+                    onClick={() => handleJoinNetworking(post.eventId, post.eventName)}
+                    title="Join Networking Group"
+                  >
+                    <Users className="w-4 h-4 md:w-5 md:h-5 text-[#1D6FD8]" />
+                    <span className="hidden sm:inline text-[#1D6FD8]">Networking</span>
+                  </Button>
                   <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 ml-auto text-xs md:text-sm">
                     <Share2 className="w-4 h-4 md:w-5 md:h-5" />
                   </Button>
@@ -922,14 +968,31 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                 <p className="text-gray-800 text-xs md:text-sm">{post.caption}</p>
 
                 {/* Event Tag */}
-                <Badge
-                  variant="outline"
-                  className="mt-2 md:mt-3 cursor-pointer hover:bg-gray-100 text-xs"
-                  onClick={() => onNavigate && onNavigate("event-detail", post.eventId)}
-                >
-                  <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
-                  {post.eventName}
-                </Badge>
+                <div className="flex items-center justify-between mt-2 md:mt-3">
+                  <Badge
+                    variant="outline"
+                    className="cursor-pointer hover:bg-gray-100 text-xs"
+                    onClick={() => onNavigate && onNavigate("event-detail", post.eventId)}
+                  >
+                    <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
+                    {post.eventName}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 md:gap-2 text-xs md:text-sm h-auto p-1.5 md:p-2"
+                    onClick={() => handleAddToCalendar(post.eventId, post.eventName)}
+                    title="Add to Calendar"
+                  >
+                    <Calendar
+                      className={`w-4 h-4 md:w-5 md:h-5 ${
+                        calendarEventIds.includes(post.eventId)
+                          ? "fill-[#1D6FD8] text-[#1D6FD8]"
+                          : "text-gray-600"
+                      }`}
+                    />
+                  </Button>
+                </div>
               </div>
             </Card>
             ))}
@@ -959,7 +1022,7 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                           </div>
                         </div>
                       </div>
-                      {post.isOwnPost && (
+                      {post.isOwnPost && post.id !== "1" && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -1018,6 +1081,16 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                             }`}
                           />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 md:gap-2 text-xs md:text-sm"
+                          onClick={() => handleJoinNetworking(post.eventId, post.eventName)}
+                          title="Join Networking Group"
+                        >
+                          <Users className="w-4 h-4 md:w-5 md:h-5 text-[#1D6FD8]" />
+                          <span className="hidden sm:inline text-[#1D6FD8]">Networking</span>
+                        </Button>
                         <Button variant="ghost" size="sm" className="gap-1.5 md:gap-2 ml-auto text-xs md:text-sm">
                           <Share2 className="w-4 h-4 md:w-5 md:h-5" />
                         </Button>
@@ -1027,14 +1100,31 @@ export function PostsPage({ onNavigate }: PostsPageProps) {
                       <p className="text-gray-800 text-xs md:text-sm">{post.caption}</p>
 
                       {/* Event Tag */}
-                      <Badge
-                        variant="outline"
-                        className="mt-2 md:mt-3 cursor-pointer hover:bg-gray-100 text-xs"
-                        onClick={() => onNavigate && onNavigate("event-detail", post.eventId)}
-                      >
-                        <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
-                        {post.eventName}
-                      </Badge>
+                      <div className="flex items-center justify-between mt-2 md:mt-3">
+                        <Badge
+                          variant="outline"
+                          className="cursor-pointer hover:bg-gray-100 text-xs"
+                          onClick={() => onNavigate && onNavigate("event-detail", post.eventId)}
+                        >
+                          <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
+                          {post.eventName}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 md:gap-2 text-xs md:text-sm h-auto p-1.5 md:p-2"
+                          onClick={() => handleAddToCalendar(post.eventId, post.eventName)}
+                          title="Add to Calendar"
+                        >
+                          <Calendar
+                            className={`w-4 h-4 md:w-5 md:h-5 ${
+                              calendarEventIds.includes(post.eventId)
+                                ? "fill-[#1D6FD8] text-[#1D6FD8]"
+                                : "text-gray-600"
+                            }`}
+                          />
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))
