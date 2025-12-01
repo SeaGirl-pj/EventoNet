@@ -37,21 +37,21 @@ export function Navigation({ currentPage, onNavigate, onLogout }: NavigationProp
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 relative">
             {/* Logo */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate("posts")}>
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF7A33] to-[#1D6FD8] rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-2 md:gap-3 cursor-pointer" onClick={() => onNavigate("posts")}>
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-[#FF7A33] to-[#1D6FD8] rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 md:w-6 md:h-6 text-white" />
               </div>
-              <span className="text-base md:text-xl font-semibold">EventoNet</span>
+              <span className="text-sm md:text-base lg:text-xl font-semibold">EventoNet</span>
             </div>
 
             {/* AI Event Helper Button - Center */}
             <div className="absolute left-1/2 -translate-x-1/2">
               <Button
                 onClick={() => onNavigate("ai-event-finder")}
-                className="bg-gradient-to-r from-[#FF7A33] to-[#1D6FD8] text-white hover:from-[#FF6A23] hover:to-[#1D5FC8] text-xs md:text-sm flex items-center gap-1.5 md:gap-2 px-2 md:px-3 whitespace-nowrap"
+                className="bg-gradient-to-r from-[#FF7A33] to-[#1D6FD8] text-white hover:from-[#FF6A23] hover:to-[#1D5FC8] text-[10px] md:text-sm flex items-center gap-1 md:gap-2 px-1.5 md:px-3 py-1 md:py-1.5 whitespace-nowrap h-7 md:h-9"
                 size="sm"
               >
-                <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
                 <span className="hidden sm:inline">AI Event Helper</span>
                 <span className="sm:hidden">AI Helper</span>
               </Button>
